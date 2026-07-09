@@ -94,6 +94,8 @@ interface TenantAdminProps {
   setSecuritySettings: (s: { otpEnabled: boolean; biometricsEnabled: boolean }) => void;
   generalTimeSlots: string[];
   setGeneralTimeSlots: (slots: string[]) => void;
+  gallery: any[];
+  setGallery: (g: any[]) => void;
 }
 
 export default function TenantAdmin({
@@ -114,7 +116,9 @@ export default function TenantAdmin({
   securitySettings,
   setSecuritySettings,
   generalTimeSlots,
-  setGeneralTimeSlots
+  setGeneralTimeSlots,
+  gallery,
+  setGallery
 }: TenantAdminProps) {
   const [activeTab, setActiveTab] = useState<'colaboradores' | 'servicios' | 'turnos' | 'personalizacion' | 'configuracion' | 'pagos' | 'seguridad' | 'notificaciones'>('colaboradores');
   const [clearOnDownload, setClearOnDownload] = useState(false);
@@ -234,7 +238,7 @@ export default function TenantAdmin({
       setCollaborators(
         collaborators.map(c => 
           c.id === editingCollabId 
-            ? { ...c, name: collabForm.name, role: collabForm.role, email: collabForm.email, isAdmin: !!collabForm.isAdmin, scheduleType: collabForm.scheduleType, customSlots: collabForm.customSlots } 
+            ? { ...c, name: collabForm.name, role: collabForm.role, email: collabForm.email, username: collabForm.email, password: collabForm.password || c.password, isAdmin: !!collabForm.isAdmin, scheduleType: collabForm.scheduleType, customSlots: collabForm.customSlots }
             : c
         )
       );
@@ -251,7 +255,9 @@ export default function TenantAdmin({
         avatar: collabForm.avatar,
         isAdmin: !!collabForm.isAdmin,
         scheduleType: collabForm.scheduleType,
-        customSlots: collabForm.customSlots
+        customSlots: collabForm.customSlots,
+        username: collabForm.email,
+        password: collabForm.password
       };
       setCollaborators([...collaborators, newCollab]);
       triggerPush('Nuevo Colaborador', `¡Se ha agregado a ${collabForm.name} al equipo de barberos!`);
@@ -1846,6 +1852,34 @@ export default function TenantAdmin({
                   </button>
                 </div>
               </form>
+
+              {/* Galería de Trabajos */}
+              <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-5 space-y-4 mt-6">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2"><span>🖼️</span> Galería de Trabajos</h3>
+                <p className="text-[11px] text-neutral-400">Subí fotos de tus cortes/trabajos (desde el celular o la PC). Se muestran en la página pública de la barbería.</p>
+                <ImageUploader
+                  label="Agregar foto a la galería (Móvil o PC)"
+                  currentImage=""
+                  onUpload={(base64) => setGallery([...(gallery || []), { id: Math.random().toString(36).slice(2), image: base64, title: '' }])}
+                />
+                {gallery && gallery.length > 0 ? (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                    {gallery.map((g: any) => (
+                      <div key={g.id} className="relative group rounded-xl overflow-hidden border border-neutral-800">
+                        <img src={g.image} alt="galería" className="w-full h-24 object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setGallery(gallery.filter((x: any) => x.id !== g.id))}
+                          className="absolute top-1 right-1 bg-red-600/90 hover:bg-red-500 text-white w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                          title="Eliminar foto"
+                        >✕</button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-neutral-500 italic">Todavía no cargaste fotos. Hasta que subas las tuyas, la página pública muestra fotos de ejemplo.</p>
+                )}
+              </div>
             </div>
           )}
 
