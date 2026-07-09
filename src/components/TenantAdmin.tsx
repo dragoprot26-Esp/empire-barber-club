@@ -204,7 +204,9 @@ export default function TenantAdmin({
     phone: tenant.phone || '',
     address: tenant.address || '',
     description: tenant.description || '',
-    shopImageUrl: tenant.shopImageUrl || ''
+    shopImageUrl: tenant.shopImageUrl || '',
+    currency: tenant.currency || 'ARS',
+    phonePrefix: tenant.phonePrefix || '+54 9'
   });
 
   // Color preset options
@@ -374,7 +376,9 @@ export default function TenantAdmin({
       phone: configForm.phone,
       address: configForm.address,
       description: configForm.description,
-      shopImageUrl: configForm.shopImageUrl
+      shopImageUrl: configForm.shopImageUrl,
+      currency: configForm.currency,
+      phonePrefix: configForm.phonePrefix
     });
     triggerPush('Configuración Actualizada', 'Los datos del local han sido guardados con éxito.');
   };
@@ -479,7 +483,7 @@ export default function TenantAdmin({
               <th>Teléfono</th>
               <th>Servicio</th>
               <th>Categoría</th>
-              <th>Monto (USD)</th>
+              <th>Monto (${tenant.currency || 'ARS'})</th>
               <th>Barbero Especialista</th>
               <th>Fecha</th>
               <th>Horario</th>
@@ -1243,7 +1247,7 @@ export default function TenantAdmin({
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[11px] font-semibold text-neutral-300">Precio (USD)</label>
+                      <label className="text-[11px] font-semibold text-neutral-300">Precio ({tenant.currency || 'ARS'})</label>
                       <input
                         type="number"
                         required
@@ -1540,7 +1544,7 @@ export default function TenantAdmin({
                       <div className="flex justify-between pt-1.5 border-t border-neutral-900 font-bold">
                         <span className="text-neutral-500">PRECIO:</span>
                         <span className="text-amber-500">
-                          ${services.find(s => s.id === selectedBooking.serviceId)?.price || 30}.00 USD
+                          ${services.find(s => s.id === selectedBooking.serviceId)?.price || 30}.00 {tenant.currency || 'ARS'}
                         </span>
                       </div>
                     </div>
@@ -1567,7 +1571,13 @@ export default function TenantAdmin({
                   <div className="flex gap-2 justify-end">
                     <button
                       type="button"
-                      onClick={() => alert(`Enviando recordatorio simulado a WhatsApp para ${selectedBooking.clientPhone}...`)}
+                      onClick={() => {
+                        const pref = (tenant.phonePrefix || '+54 9').replace(/\D/g, '');
+                        const tel = (selectedBooking.clientPhone || '').replace(/\D/g, '');
+                        const svc = services.find(s => s.id === selectedBooking.serviceId)?.name || 'tu servicio';
+                        const msg = `Hola ${selectedBooking.clientName}! Te recordamos tu turno en ${tenant.name} para ${svc} el ${selectedBooking.date} a las ${selectedBooking.timeSlot}. ¡Te esperamos!`;
+                        window.open(`https://wa.me/${pref}${tel}?text=${encodeURIComponent(msg)}`, '_blank');
+                      }}
                       className="px-3.5 py-2 bg-neutral-800 hover:bg-neutral-700 text-amber-500 border border-amber-500/20 hover:border-amber-500/40 rounded-xl text-xs font-bold transition-all cursor-pointer"
                     >
                       Enviar WhatsApp
@@ -1643,6 +1653,31 @@ export default function TenantAdmin({
                     placeholder="Ej. 45th Ave, Queens NYC"
                     className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
                   />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-neutral-300">Moneda (símbolo)</label>
+                    <input
+                      type="text"
+                      value={configForm.currency}
+                      onChange={e => setConfigForm({ ...configForm, currency: e.target.value })}
+                      placeholder="Ej. ARS"
+                      className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                    />
+                    <p className="text-[9px] text-neutral-500">Se muestra junto a los precios (ej: ARS, USD).</p>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-neutral-300">Prefijo de WhatsApp</label>
+                    <input
+                      type="text"
+                      value={configForm.phonePrefix}
+                      onChange={e => setConfigForm({ ...configForm, phonePrefix: e.target.value })}
+                      placeholder="Ej. +54 9"
+                      className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                    />
+                    <p className="text-[9px] text-neutral-500">Se antepone al teléfono del cliente para WhatsApp.</p>
+                  </div>
                 </div>
 
                 <div className="space-y-1">
@@ -2098,7 +2133,7 @@ export default function TenantAdmin({
                           <div className="bg-neutral-900 p-4 rounded-xl border border-neutral-800 flex items-center justify-between">
                             <div>
                               <span className="text-[9px] uppercase font-mono font-bold text-neutral-400 block">Ventas de Hoy 📱</span>
-                              <span className="text-xl font-bold text-amber-500 mt-0.5 block">${dailyTotal.toFixed(2)} USD</span>
+                              <span className="text-xl font-bold text-amber-500 mt-0.5 block">${dailyTotal.toFixed(2)} {tenant.currency || 'ARS'}</span>
                               <span className="text-[8px] font-mono text-neutral-500 block mt-1">Día actual o 2026-07-08</span>
                             </div>
                             <Clock className="w-8 h-8 text-neutral-700 shrink-0" />
@@ -2107,7 +2142,7 @@ export default function TenantAdmin({
                           <div className="bg-neutral-900 p-4 rounded-xl border border-neutral-800 flex items-center justify-between">
                             <div>
                               <span className="text-[9px] uppercase font-mono font-bold text-neutral-400 block">Esta Semana 💻</span>
-                              <span className="text-xl font-bold text-white mt-0.5 block">${weeklyTotal.toFixed(2)} USD</span>
+                              <span className="text-xl font-bold text-white mt-0.5 block">${weeklyTotal.toFixed(2)} {tenant.currency || 'ARS'}</span>
                               <span className="text-[8px] font-mono text-neutral-500 block mt-1">Últimos 7 días activos</span>
                             </div>
                             <Calendar className="w-8 h-8 text-neutral-700 shrink-0" />
@@ -2116,7 +2151,7 @@ export default function TenantAdmin({
                           <div className="bg-neutral-900 p-4 rounded-xl border border-neutral-800 flex items-center justify-between">
                             <div>
                               <span className="text-[9px] uppercase font-mono font-bold text-neutral-400 block">Este Mes 📊</span>
-                              <span className="text-xl font-bold text-emerald-400 mt-0.5 block">${monthlyTotal.toFixed(2)} USD</span>
+                              <span className="text-xl font-bold text-emerald-400 mt-0.5 block">${monthlyTotal.toFixed(2)} {tenant.currency || 'ARS'}</span>
                               <span className="text-[8px] font-mono text-neutral-500 block mt-1">Mes en curso</span>
                             </div>
                             <TrendingUp className="w-8 h-8 text-neutral-700 shrink-0" />
@@ -2125,7 +2160,7 @@ export default function TenantAdmin({
                           <div className="bg-neutral-900 p-4 rounded-xl border border-neutral-800 flex items-center justify-between">
                             <div>
                               <span className="text-[9px] uppercase font-mono font-bold text-neutral-400 block">Este Año 🏆</span>
-                              <span className="text-xl font-bold text-indigo-400 mt-0.5 block">${yearlyTotal.toFixed(2)} USD</span>
+                              <span className="text-xl font-bold text-indigo-400 mt-0.5 block">${yearlyTotal.toFixed(2)} {tenant.currency || 'ARS'}</span>
                               <span className="text-[8px] font-mono text-neutral-500 block mt-1">Año {now.getFullYear()}</span>
                             </div>
                             <BarChart2 className="w-8 h-8 text-neutral-700 shrink-0" />
@@ -2345,7 +2380,7 @@ export default function TenantAdmin({
                               <td className="p-3 font-mono text-neutral-400 text-[11px]">{payment.id}</td>
                               <td className="p-3 font-semibold">{payment.concept}</td>
                               <td className="p-3 text-neutral-300">{payment.date}</td>
-                              <td className="p-3 font-bold text-amber-500">${payment.amount.toFixed(2)} USD</td>
+                              <td className="p-3 font-bold text-amber-500">${payment.amount.toFixed(2)} {tenant.currency || 'ARS'}</td>
                               <td className="p-3 text-right">
                                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-950 text-green-300 border border-green-800">
                                   {payment.status}
@@ -2696,19 +2731,19 @@ export default function TenantAdmin({
             <div className="grid grid-cols-4 gap-4 mb-6 text-center">
               <div className="border border-neutral-300 p-3 rounded">
                 <span className="text-[10px] font-bold text-neutral-500 uppercase block">Hoy</span>
-                <span className="text-sm font-black text-neutral-900">${dailyTotal.toFixed(2)} USD</span>
+                <span className="text-sm font-black text-neutral-900">${dailyTotal.toFixed(2)} {tenant.currency || 'ARS'}</span>
               </div>
               <div className="border border-neutral-300 p-3 rounded">
                 <span className="text-[10px] font-bold text-neutral-500 uppercase block">Esta Semana</span>
-                <span className="text-sm font-black text-neutral-900">${weeklyTotal.toFixed(2)} USD</span>
+                <span className="text-sm font-black text-neutral-900">${weeklyTotal.toFixed(2)} {tenant.currency || 'ARS'}</span>
               </div>
               <div className="border border-neutral-300 p-3 rounded">
                 <span className="text-[10px] font-bold text-neutral-500 uppercase block">Este Mes</span>
-                <span className="text-sm font-black text-neutral-900">${monthlyTotal.toFixed(2)} USD</span>
+                <span className="text-sm font-black text-neutral-900">${monthlyTotal.toFixed(2)} {tenant.currency || 'ARS'}</span>
               </div>
               <div className="border border-neutral-300 p-3 rounded">
                 <span className="text-[10px] font-bold text-neutral-500 uppercase block">Este Año</span>
-                <span className="text-sm font-black text-neutral-900">${yearlyTotal.toFixed(2)} USD</span>
+                <span className="text-sm font-black text-neutral-900">${yearlyTotal.toFixed(2)} {tenant.currency || 'ARS'}</span>
               </div>
             </div>
           );
