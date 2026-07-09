@@ -1,0 +1,6 @@
+{
+  "name": "Empire Barber Club",
+  "description": "PWA Multi-inquilino de Barbería estilo Nueva York con portal administrativo, gestor de colaboradores, personalización visual y agendamiento de turnos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
