@@ -73,6 +73,8 @@ export default function App() {
   const [loginBusy, setLoginBusy] = useState(false);
   const rolRef = useRef<'admin' | 'colab'>('admin');
   const hydratedRef = useRef(false);
+  const [sessionRole, setSessionRole] = useState<'admin' | 'colab'>('admin');
+  const [sessionUser, setSessionUser] = useState('');
 
   const addNotification = (title: string, body: string) => {
     setNotifications(prev => [{ id: Math.random().toString(36).slice(2), title, body, date: new Date().toLocaleTimeString(), read: false }, ...prev]);
@@ -154,6 +156,8 @@ export default function App() {
         : await asegurarCuentaSeguraColab(u, p, lic.codigo);
       if (!r.ok) { setLoginError(r.msg || 'No se pudo ingresar.'); return; }
       rolRef.current = esDueno ? 'admin' : 'colab';
+      setSessionRole(esDueno ? 'admin' : 'colab');
+      setSessionUser(u);
       if (securitySettings.otpEnabled) {
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         setGeneratedOtp(code); setOtpInput(''); setLoginStep('otp');
@@ -311,6 +315,8 @@ export default function App() {
             setGeneralTimeSlots={setGeneralTimeSlots}
             gallery={gallery}
             setGallery={setGallery}
+            sessionRole={sessionRole}
+            sessionUser={sessionUser}
           />
         ) : (
           <PublicPage
