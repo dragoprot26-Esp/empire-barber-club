@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
 import {
-  ShieldCheck, Eye, LayoutDashboard, Lock, Mail, KeyRound, Share2,
+  ShieldCheck, Eye, LayoutDashboard, Lock, Mail, KeyRound, Share2, Fingerprint,
 } from 'lucide-react';
 import { Tenant, Collaborator, Service, Booking, Testimonial, Payment, PushNotification } from './types';
 import PublicPage from './components/PublicPage';
@@ -10,6 +10,7 @@ import {
   cloudLoad, cloudSave, barbPublica, barbAgregarReserva, barbAgregarTestimonio,
   signOut,
 } from './cloud';
+import * as bio from './biometric';
 
 // ── Barbería vacía por defecto (local nuevo; los datos reales vienen de la nube) ──
 const defaultTenant: Tenant = {
@@ -75,6 +76,9 @@ export default function App() {
   const hydratedRef = useRef(false);
   const [sessionRole, setSessionRole] = useState<'admin' | 'colab'>('admin');
   const [sessionUser, setSessionUser] = useState('');
+  const [bioAvail, setBioAvail] = useState(false);
+  const [bioOn, setBioOn] = useState(false);
+  const pendingBioRef = useRef<bio.BioCreds | null>(null);
 
   const addNotification = (title: string, body: string) => {
     setNotifications(prev => [{ id: Math.random().toString(36).slice(2), title, body, date: new Date().toLocaleTimeString(), read: false }, ...prev]);
@@ -103,6 +107,13 @@ export default function App() {
       if (r && r.ok && r.shop) hydrate({ shop: r.shop });
       setCargandoPublico(false);
     })();
+  }, []);
+
+  // ── Detectar biometría del dispositivo ──
+  useEffect(() => {
+    if (publicMode) return;
+    bio.bioSupported().then(setBioAvail);
+    setBioOn(bio.bioEnabled());
   }, []);
 
   // ── Guardado automático en la nube (solo admin logueado) ──
@@ -158,6 +169,7 @@ export default function App() {
       rolRef.current = esDueno ? 'admin' : 'colab';
       setSessionRole(esDueno ? 'admin' : 'colab');
       setSessionUser(u);
+      pendingBioRef.current = { codigo: lic.codigo, usuario: u, password: p, role: esDueno ? 'admin' : 'colab' };
       if (securitySettings.otpEnabled) {
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         setGeneratedOtp(code); setOtpInput(''); setLoginStep('otp');
@@ -185,6 +197,44 @@ export default function App() {
     setIsAdminLoggedIn(true);
     setIsLoginModalOpen(false);
     addNotification('Inicio de sesión', 'Acceso al panel otorgado.');
+    // Ofrecer activar la huella si el dispositivo la soporta y no está activada
+    if (bioAvail && !bio.bioEnabled() && pendingBioRef.current) {
+      const creds = pendingBioRef.current;
+      setTimeout(async () => {
+        if (window.confirm('¿Querés usar tu huella / Face ID para entrar más rápido la próxima vez?')) {
+          try { await bio.bioEnable(creds); setBioOn(true); } catch (e) { /* cancelado */ }
+        }
+        pendingBioRef.current = null;
+      }, 700);
+    }
+  };
+
+  const handleBioLogin = async () => {
+    setLoginError('');
+    try {
+      const creds = await bio.bioLogin();
+      if (!creds) return;
+      const lic = getLicencia();
+      if (!lic || lic.codigo !== creds.codigo) {
+        setLoginError('La licencia guardada no coincide. Ingresá con licencia y contraseña.');
+        return;
+      }
+      setLoginBusy(true);
+      const r = creds.role === 'admin'
+        ? await asegurarCuentaSeguraDueno(creds.usuario, creds.password, creds.codigo)
+        : await asegurarCuentaSeguraColab(creds.usuario, creds.password, creds.codigo);
+      if (!r.ok) { setLoginError(r.msg || 'No se pudo entrar con huella.'); return; }
+      rolRef.current = creds.role;
+      setSessionRole(creds.role);
+      setSessionUser(creds.usuario);
+      pendingBioRef.current = null;
+      await finishLogin();
+    } catch (e: any) {
+      if (e && e.name === 'NotAllowedError') setLoginError('Biometría cancelada.');
+      else setLoginError('No se pudo verificar la huella.');
+    } finally {
+      setLoginBusy(false);
+    }
   };
 
   const handleLogout = () => {
@@ -392,6 +442,18 @@ export default function App() {
 
             {loginError && (
               <div className="bg-red-500/10 border border-red-500/30 text-red-300 text-[11px] rounded-lg px-3 py-2">{loginError}</div>
+            )}
+
+            {bioOn && bioAvail && (
+              <button
+                type="button"
+                onClick={handleBioLogin}
+                disabled={loginBusy}
+                className="w-full flex items-center justify-center gap-2 bg-neutral-800 hover:bg-neutral-700 disabled:opacity-60 text-amber-400 font-bold px-4 py-3 rounded-lg text-xs uppercase tracking-wider border border-amber-500/30 transition-all cursor-pointer"
+              >
+                <Fingerprint className="w-4 h-4" />
+                <span>Entrar con huella / Face ID</span>
+              </button>
             )}
 
             {loginStep === 'license' && (
