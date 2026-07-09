@@ -412,7 +412,7 @@ export default function TenantAdmin({
       date: new Date().toLocaleTimeString(),
       read: false
     };
-    setNotifications([newNotif, ...notifications]);
+    setNotifications([newNotif, ...notifications].slice(0, 15));
   };
 
   // Simulates push notification
