@@ -96,6 +96,8 @@ interface TenantAdminProps {
   setGeneralTimeSlots: (slots: string[]) => void;
   gallery: any[];
   setGallery: (g: any[]) => void;
+  sessionRole?: 'admin' | 'colab';
+  sessionUser?: string;
 }
 
 export default function TenantAdmin({
@@ -118,7 +120,9 @@ export default function TenantAdmin({
   generalTimeSlots,
   setGeneralTimeSlots,
   gallery,
-  setGallery
+  setGallery,
+  sessionRole = 'admin',
+  sessionUser = ''
 }: TenantAdminProps) {
   const [activeTab, setActiveTab] = useState<'colaboradores' | 'servicios' | 'turnos' | 'personalizacion' | 'configuracion' | 'pagos' | 'seguridad' | 'notificaciones'>('colaboradores');
   const [clearOnDownload, setClearOnDownload] = useState(false);
@@ -136,15 +140,16 @@ export default function TenantAdmin({
   // 1. simulatedSession is 'inquilino-1' (primary admin)
   // 2. simulatedSession is 'inquilino-2' (the second admin designated directly)
   // 3. activeCollab is explicitly marked as isAdmin or matches secondaryAdminId
-  const isCurrentlyAdmin = 
-    simulatedSession === 'inquilino-1' || 
-    simulatedSession === 'inquilino-2' || 
-    (activeCollab && (activeCollab.isAdmin || activeCollab.id === secondaryAdminId));
+  const forcedColab = sessionRole === 'colab';
+  const isCurrentlyAdmin = forcedColab ? false : (
+    simulatedSession === 'inquilino-1' ||
+    simulatedSession === 'inquilino-2' ||
+    (activeCollab && (activeCollab.isAdmin || activeCollab.id === secondaryAdminId)));
 
   // Auto-enforce tab restrictions for normal collaborators
   useEffect(() => {
     if (!isCurrentlyAdmin) {
-      const allowedTabs = ['turnos', 'servicios', 'pagos', 'notificaciones'];
+      const allowedTabs = ['turnos', 'notificaciones'];
       if (!allowedTabs.includes(activeTab)) {
         setActiveTab('turnos');
       }
@@ -153,6 +158,15 @@ export default function TenantAdmin({
       }
     }
   }, [isCurrentlyAdmin, activeTab, paymentsSubTab]);
+
+  // Si el que entró es un barbero (colaborador), fijamos su sesión a su propio id
+  // para que solo vea SUS turnos.
+  useEffect(() => {
+    if (forcedColab && sessionUser) {
+      const me = collaborators.find(c => ((c.username || c.email) || '').toLowerCase() === sessionUser.toLowerCase());
+      if (me && simulatedSession !== me.id) setSimulatedSession(me.id);
+    }
+  }, [forcedColab, sessionUser, collaborators]);
 
   // Set default isAdmin true for secondaryAdminId on mount if not already set
   useEffect(() => {
@@ -559,7 +573,8 @@ export default function TenantAdmin({
   return (
     <div className="w-full max-w-6xl mx-auto px-4 py-8 space-y-6">
       
-      {/* MÓDULO DE SEGURIDAD Y SIMULACIÓN DE ROLES MULTITENANT */}
+      {/* MÓDULO DE SEGURIDAD Y SIMULACIÓN DE ROLES MULTITENANT (solo dueño/admin) */}
+      {!forcedColab && (
       <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 mb-2 space-y-4 animate-fade-in print:hidden">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-neutral-800 pb-3">
           <div className="flex items-center gap-2.5">
@@ -628,6 +643,7 @@ export default function TenantAdmin({
           </div>
         </div>
       </div>
+      )}
 
       {/* Top Banner / Status */}
       <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 mb-2 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -689,6 +705,7 @@ export default function TenantAdmin({
               </button>
             )}
 
+            {isCurrentlyAdmin && (
             <button
               onClick={() => setActiveTab('servicios')}
               className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
@@ -700,6 +717,7 @@ export default function TenantAdmin({
               <Scissors className="w-4 h-4 shrink-0" />
               <span>Servicios</span>
             </button>
+            )}
 
             <button
               onClick={() => setActiveTab('turnos')}
@@ -746,6 +764,7 @@ export default function TenantAdmin({
               </button>
             )}
 
+            {isCurrentlyAdmin && (
             <button
               onClick={() => setActiveTab('pagos')}
               className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
@@ -757,6 +776,7 @@ export default function TenantAdmin({
               <CreditCard className="w-4 h-4 shrink-0" />
               <span>Historial de Pagos</span>
             </button>
+            )}
 
             {isCurrentlyAdmin && (
               <button
