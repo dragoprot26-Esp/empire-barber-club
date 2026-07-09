@@ -48,6 +48,7 @@ export default function App() {
   const [services, setServices] = useState<Service[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [gallery, setGallery] = useState<any[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [notifications, setNotifications] = useState<PushNotification[]>([]);
   const [generalTimeSlots, setGeneralTimeSlots] = useState<string[]>(defaultTimeSlots);
@@ -85,6 +86,7 @@ export default function App() {
     setServices(Array.isArray(shop.services) ? shop.services : []);
     setCollaborators(Array.isArray(shop.collaborators) ? shop.collaborators : []);
     setTestimonials(Array.isArray(shop.testimonials) ? shop.testimonials : (Array.isArray(data.testimonials) ? data.testimonials : []));
+    setGallery(Array.isArray(shop.gallery) ? shop.gallery : []);
     setGeneralTimeSlots(Array.isArray(shop.timeSlots) && shop.timeSlots.length ? shop.timeSlots : defaultTimeSlots);
     setBookings(Array.isArray(data.bookings) ? data.bookings : []);
     setPayments(Array.isArray(data.payments) ? data.payments : []);
@@ -108,13 +110,13 @@ export default function App() {
     if (!codigo) return;
     const t = setTimeout(() => {
       const data = {
-        shop: { ...tenant, services, collaborators, testimonials, timeSlots: generalTimeSlots },
+        shop: { ...tenant, services, collaborators, testimonials, gallery, timeSlots: generalTimeSlots },
         bookings, payments, notifications,
       };
       cloudSave(codigo, data);
     }, 900);
     return () => clearTimeout(t);
-  }, [tenant, collaborators, services, bookings, testimonials, payments, generalTimeSlots]);
+  }, [tenant, collaborators, services, bookings, testimonials, gallery, payments, generalTimeSlots]);
 
   // ── Login ──
   const handleAdminBadgeClick = () => {
@@ -228,6 +230,7 @@ export default function App() {
         onAddNotification={addNotification}
         shopImagePath={barberShopImagePath}
         generalTimeSlots={generalTimeSlots}
+        gallery={gallery}
         publicMode={true}
         licenseCode={publicCode!}
         onBook={handleBook}
@@ -306,6 +309,8 @@ export default function App() {
             setSecuritySettings={setSecuritySettings}
             generalTimeSlots={generalTimeSlots}
             setGeneralTimeSlots={setGeneralTimeSlots}
+            gallery={gallery}
+            setGallery={setGallery}
           />
         ) : (
           <PublicPage
@@ -319,6 +324,7 @@ export default function App() {
             onAddNotification={addNotification}
             shopImagePath={barberShopImagePath}
             generalTimeSlots={generalTimeSlots}
+            gallery={gallery}
             publicMode={false}
             licenseCode={tenant.id}
             onBook={handleBook}
@@ -380,6 +386,10 @@ export default function App() {
                   <input type="password" required value={passwordInput} onChange={e => setPasswordInput(e.target.value)} placeholder="••••••••"
                     className="w-full bg-neutral-950 border border-neutral-800 text-xs text-white rounded-lg px-3 py-2.5 focus:outline-none focus:border-amber-500" />
                 </div>
+                <p className="text-[10px] text-neutral-500 leading-relaxed">
+                  <span className="text-neutral-400 font-semibold">Dueño:</span> usuario y contraseña de la licencia.{' '}
+                  <span className="text-neutral-400 font-semibold">Barbero:</span> tu email y clave cargados en el panel.
+                </p>
                 <button type="submit" disabled={loginBusy} className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-neutral-950 font-bold px-4 py-2.5 rounded-lg text-xs uppercase tracking-wider">
                   {loginBusy ? 'Verificando…' : 'Ingresar'}
                 </button>
