@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
 import {
-  ShieldCheck, Eye, LayoutDashboard, Lock, Mail, KeyRound,
+  ShieldCheck, Eye, LayoutDashboard, Lock, Mail, KeyRound, Share2,
 } from 'lucide-react';
 import { Tenant, Collaborator, Service, Booking, Testimonial, Payment, PushNotification } from './types';
 import PublicPage from './components/PublicPage';
@@ -215,6 +215,25 @@ export default function App() {
     return true;
   };
 
+  // ── Compartir / visitar la vitrina pública ──
+  const codigoActual = () => (getLicencia()?.codigo || tenant.id || '');
+  const linkVitrina = () => `${window.location.origin}/?codigo=${encodeURIComponent(codigoActual())}`;
+  const compartirPagina = async () => {
+    const cod = codigoActual();
+    if (!cod) { alert('Activá tu licencia primero para compartir tu página.'); return; }
+    const url = linkVitrina();
+    const text = `Reservá tu turno en ${tenant.name}: ${url}`;
+    try {
+      if ((navigator as any).share) { await (navigator as any).share({ title: tenant.name, text, url }); }
+      else { await navigator.clipboard.writeText(url); alert('Link de tu página copiado:\n' + url); }
+    } catch (e) { /* cancelado */ }
+  };
+  const visitarVitrina = () => {
+    const cod = codigoActual();
+    if (!cod) { alert('Activá tu licencia primero.'); return; }
+    window.open(linkVitrina(), '_blank');
+  };
+
   const barberShopImagePath = tenant.shopImageUrl || '';
 
   // ── Modo público: solo la vidriera ──
@@ -277,7 +296,14 @@ export default function App() {
                   : (<><Eye className="w-3.5 h-3.5 text-amber-500 animate-pulse" /><span>Ojo: Vista Web</span></>)}
               </button>
             ) : (
-              <span className="text-[10px] font-mono text-neutral-500">Barbería</span>
+              <button
+                onClick={compartirPagina}
+                className="flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-800 text-amber-500 px-3 py-1.5 rounded-lg text-[10px] font-bold border border-neutral-800 transition-all cursor-pointer"
+                title="Compartir el link de tu página pública"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Compartir página</span>
+              </button>
             )}
           </div>
         </div>
@@ -339,9 +365,16 @@ export default function App() {
         )}
       </main>
 
-      <footer className="border-t border-neutral-900 bg-neutral-950 py-6 px-6 text-center">
+      <footer className="border-t border-neutral-900 bg-neutral-950 py-6 px-6 text-center space-y-3">
         <p className="text-xs text-neutral-400 font-mono">{tenant.name || 'Barbería'} © {new Date().getFullYear()}</p>
-        <p className="text-[10px] text-neutral-500">Sistema de turnos y vidriera · CyC</p>
+        <button
+          onClick={visitarVitrina}
+          className="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold px-4 py-2 rounded-lg text-xs uppercase tracking-wider transition-all cursor-pointer"
+        >
+          <Eye className="w-3.5 h-3.5" />
+          <span>Visitá la Vitrina</span>
+        </button>
+        <p className="text-[10px] text-neutral-500">Sistema de turnos · CyC</p>
       </footer>
 
       {/* LOGIN MODAL (licencia → credenciales → OTP estético) */}
