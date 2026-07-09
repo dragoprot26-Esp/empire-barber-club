@@ -251,6 +251,10 @@ export default function PublicPage({
       alert('Por favor complete su nombre y teléfono para agendar.');
       return;
     }
+    if (!currentService || !currentCollab || !selectedTimeSlot) {
+      alert('Elegí un servicio, un barbero y un horario antes de confirmar.');
+      return;
+    }
 
     const newBooking: Booking = {
       id: Math.random().toString(36).substring(7),
@@ -274,7 +278,7 @@ export default function PublicPage({
     // Add real-time push notification for tenant admin
     onAddNotification(
       'Nueva Reserva de Turno',
-      `¡Excelente! ${clientName} reservó un turno con ${currentCollab.name} para ${currentService.name} el ${selectedDate} a las ${selectedTimeSlot}.`
+      `¡Excelente! ${clientName} reservó un turno con ${currentCollab?.name || 'un barbero'} para ${currentService?.name || 'un servicio'} el ${selectedDate} a las ${selectedTimeSlot}.`
     );
 
     setIsBookingSuccess(true);
@@ -462,7 +466,7 @@ export default function PublicPage({
                             <div>
                               <span className="text-[9px] text-neutral-500 block uppercase font-mono">Servicio</span>
                               <span className="font-semibold text-white">{service?.name || 'Corte Imperial'}</span>
-                              <span className="text-[10px] text-amber-500 font-mono block font-bold">${service?.price || 30}.00 USD</span>
+                              <span className="text-[10px] text-amber-500 font-mono block font-bold">${service?.price || 30}.00 {tenant.currency || 'ARS'}</span>
                             </div>
                             <div>
                               <span className="text-[9px] text-neutral-500 block uppercase font-mono">Barbero</span>
@@ -645,7 +649,7 @@ export default function PublicPage({
               <div className="bg-neutral-900/60 p-4 rounded-xl border border-neutral-800 space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-white">{currentService.name}</span>
-                  <span className="text-xs font-mono font-bold text-amber-500">${currentService.price} USD</span>
+                  <span className="text-xs font-mono font-bold text-amber-500">${currentService.price} {tenant.currency || 'ARS'}</span>
                 </div>
                 <p className="text-[11px] text-neutral-400">
                   Categoría: <span className="text-neutral-300 font-medium">{currentService.category}</span> | Duración estimada: {currentService.duration} minutos. Incluye lavado y productos premium estilo neoyorquino.
@@ -916,7 +920,7 @@ export default function PublicPage({
                         className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 cursor-pointer font-semibold"
                       >
                         {services.map(s => (
-                          <option key={s.id} value={s.id}>{s.name} — ${s.price} USD</option>
+                          <option key={s.id} value={s.id}>{s.name} — ${s.price} {tenant.currency || 'ARS'}</option>
                         ))}
                       </select>
                     </div>
@@ -1033,7 +1037,7 @@ export default function PublicPage({
                       </div>
                       <div className="text-right">
                         <span className="text-[10px] text-neutral-500 block uppercase font-mono">TOTAL</span>
-                        <span className="font-mono font-bold text-white text-sm">${tService?.price || 30}.00 USD</span>
+                        <span className="font-mono font-bold text-white text-sm">${tService?.price || 30}.00 {tenant.currency || 'ARS'}</span>
                       </div>
                     </div>
 
@@ -1070,7 +1074,7 @@ export default function PublicPage({
                             <p>Fecha: ${selectedClientBookingTicket.date}</p>
                             <p>Hora: ${selectedClientBookingTicket.timeSlot}</p>
                             <p>Servicio: ${tService?.name || ''}</p>
-                            <h3>TOTAL: $${tService?.price || 30}.00 USD</h3>
+                            <h3>TOTAL: $${tService?.price || 30}.00 ${tenant.currency || 'ARS'}</h3>
                             <hr style="border-top: 1px dashed black;"/>
                             <p>¡Gracias por su preferencia!</p>
                           </div>
