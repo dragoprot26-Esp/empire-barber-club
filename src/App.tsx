@@ -229,9 +229,7 @@ export default function App() {
     } catch (e) { /* cancelado */ }
   };
   const visitarVitrina = () => {
-    const cod = codigoActual();
-    if (!cod) { alert('Activá tu licencia primero.'); return; }
-    window.open(linkVitrina(), '_blank');
+    window.open('https://vitrina-cyc.vercel.app/', '_blank');
   };
 
   const barberShopImagePath = tenant.shopImageUrl || '';
