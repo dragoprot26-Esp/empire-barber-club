@@ -81,7 +81,7 @@ export default function App() {
   const pendingBioRef = useRef<bio.BioCreds | null>(null);
 
   const addNotification = (title: string, body: string) => {
-    setNotifications(prev => [{ id: Math.random().toString(36).slice(2), title, body, date: new Date().toLocaleTimeString(), read: false }, ...prev]);
+    setNotifications(prev => [{ id: Math.random().toString(36).slice(2), title, body, date: new Date().toLocaleTimeString(), read: false }, ...prev].slice(0, 15));
   };
 
   // ── Hidratar estado desde un objeto de datos (nube o público) ──
@@ -96,7 +96,7 @@ export default function App() {
     setGeneralTimeSlots(Array.isArray(shop.timeSlots) && shop.timeSlots.length ? shop.timeSlots : defaultTimeSlots);
     setBookings(Array.isArray(data.bookings) ? data.bookings : []);
     setPayments(Array.isArray(data.payments) ? data.payments : []);
-    if (Array.isArray(data.notifications)) setNotifications(data.notifications);
+    if (Array.isArray(data.notifications)) setNotifications(data.notifications.slice(0, 15));
   };
 
   // ── Modo público: cargar la vidriera por RPC ──
