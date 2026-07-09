@@ -27,6 +27,8 @@ export interface Collaborator {
   isAdmin?: boolean;
   scheduleType?: 'general' | 'custom';
   customSlots?: string[];
+  username?: string; // para login del barbero (= email)
+  password?: string; // clave de acceso del barbero
 }
 
 export interface Service {
