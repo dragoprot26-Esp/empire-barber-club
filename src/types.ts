@@ -13,6 +13,8 @@ export interface Tenant {
   address?: string;
   shopImageUrl?: string;
   description?: string;
+  currency?: string;    // moneda a mostrar (ej: 'ARS', 'USD')
+  phonePrefix?: string; // prefijo para WhatsApp (ej: '+54 9')
 }
 
 export interface Collaborator {
