@@ -17,6 +17,7 @@ interface PublicPageProps {
   onAddNotification: (title: string, body: string) => void;
   shopImagePath: string;
   generalTimeSlots?: string[];
+  gallery?: any[];
   publicMode?: boolean;
   licenseCode?: string;
   onBook?: (b: Booking) => Promise<boolean>;
@@ -34,6 +35,7 @@ export default function PublicPage({
   onAddNotification,
   shopImagePath,
   generalTimeSlots = ['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM', '06:00 PM'],
+  gallery = [],
   publicMode = false,
   onBook,
   onTestimonial
@@ -174,7 +176,7 @@ export default function PublicPage({
   };
 
   // Gallery of completed works (Galeria de trabajos realizados)
-  const [galleryWorks, setGalleryWorks] = useState([
+  const defaultGalleryWorks = [
     {
       id: 1,
       title: 'NYC High Fade & Texturizado',
@@ -203,7 +205,8 @@ export default function PublicPage({
       likes: 31,
       barber: 'Tony R.'
     }
-  ]);
+  ];
+  const galleryWorks: any[] = (gallery && gallery.length) ? gallery : defaultGalleryWorks;
 
   // Social sharing helper
   const handleShare = (workTitle: string) => {
@@ -726,16 +729,16 @@ export default function PublicPage({
                   referrerPolicy="no-referrer"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-end p-4">
-                  <span className="text-[10px] text-amber-400 font-mono">Por {work.barber}</span>
+                  {work.barber && <span className="text-[10px] text-amber-400 font-mono">Por {work.barber}</span>}
                 </div>
               </div>
 
               <div className="p-4 space-y-3">
-                <h4 className="text-xs font-bold text-white leading-snug line-clamp-2">{work.title}</h4>
+                <h4 className="text-xs font-bold text-white leading-snug line-clamp-2">{work.title || 'Trabajo realizado'}</h4>
                 <div className="flex justify-between items-center pt-2 border-t border-neutral-900">
                   <span className="text-[10px] text-neutral-400 font-mono">Realizado</span>
                   <button
-                    onClick={() => handleShare(work.title)}
+                    onClick={() => handleShare(work.title || tenant.name)}
                     className="flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-800 text-amber-500 border border-neutral-800 px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer"
                     title="Compartir en redes sociales"
                   >
