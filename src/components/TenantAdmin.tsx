@@ -98,6 +98,8 @@ interface TenantAdminProps {
   setGallery: (g: any[]) => void;
   sessionRole?: 'admin' | 'colab';
   sessionUser?: string;
+  onListBackups?: () => Promise<any[]>;
+  onRestoreBackup?: (id: number) => Promise<boolean>;
 }
 
 export default function TenantAdmin({
@@ -122,9 +124,31 @@ export default function TenantAdmin({
   gallery,
   setGallery,
   sessionRole = 'admin',
-  sessionUser = ''
+  sessionUser = '',
+  onListBackups,
+  onRestoreBackup
 }: TenantAdminProps) {
   const [activeTab, setActiveTab] = useState<'colaboradores' | 'servicios' | 'turnos' | 'personalizacion' | 'configuracion' | 'pagos' | 'seguridad' | 'notificaciones'>('colaboradores');
+  // Copias de seguridad (rollback)
+  const [backups, setBackups] = useState<any[]>([]);
+  const [backupsOpen, setBackupsOpen] = useState(false);
+  const [backupsBusy, setBackupsBusy] = useState(false);
+  const cargarBackups = async () => {
+    if (!onListBackups) return;
+    setBackupsBusy(true);
+    try { setBackups(await onListBackups()); setBackupsOpen(true); }
+    finally { setBackupsBusy(false); }
+  };
+  const restaurarBackup = async (id: number) => {
+    if (!onRestoreBackup) return;
+    if (!window.confirm('¿Restaurar esta copia? Se reemplazan los datos actuales por los de esa fecha. (La versión actual queda guardada por las dudas.)')) return;
+    setBackupsBusy(true);
+    try {
+      const ok = await onRestoreBackup(id);
+      alert(ok ? '✅ Copia restaurada. Ya están cargados los datos de esa fecha.' : 'No se pudo restaurar. Probá de nuevo.');
+      if (ok) setBackupsOpen(false);
+    } finally { setBackupsBusy(false); }
+  };
   const [clearOnDownload, setClearOnDownload] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [paymentsSubTab, setPaymentsSubTab] = useState<'ventas' | 'licencia'>('ventas');
@@ -1900,6 +1924,42 @@ export default function TenantAdmin({
                   <p className="text-[11px] text-neutral-500 italic">Todavía no cargaste fotos. Hasta que subas las tuyas, la página pública muestra fotos de ejemplo.</p>
                 )}
               </div>
+
+              {sessionRole === 'admin' && onListBackups && (
+                <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-5 space-y-4 mt-6">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-bold text-white flex items-center gap-2"><span>🛟</span> Copias de seguridad</h3>
+                      <p className="text-[11px] text-neutral-400">Si borrás algo por error, restaurá una versión anterior de tu barbería. Se guardan solas cada vez que hay cambios.</p>
+                    </div>
+                    <button type="button" onClick={cargarBackups} disabled={backupsBusy}
+                      className="shrink-0 bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-mono px-4 py-2 rounded-xl border border-neutral-700 disabled:opacity-60 cursor-pointer">
+                      {backupsBusy ? 'Cargando…' : (backupsOpen ? 'Actualizar' : 'Ver copias')}
+                    </button>
+                  </div>
+
+                  {backupsOpen && (
+                    backups.length === 0 ? (
+                      <p className="text-[11px] text-neutral-500 font-mono">Todavía no hay copias guardadas. Se generan automáticamente cada vez que guardás cambios.</p>
+                    ) : (
+                      <div className="space-y-2 max-h-72 overflow-auto pr-1">
+                        {backups.map((b: any) => (
+                          <div key={b.id} className="flex items-center justify-between gap-3 bg-neutral-950/60 border border-neutral-800/50 rounded-xl p-3">
+                            <div className="text-xs text-neutral-300">
+                              <span className="font-mono block">{new Date(b.guardado).toLocaleString()}</span>
+                              <span className="text-[10px] text-neutral-500 font-mono">{b.servicios} servicios · {b.reservas} reservas · {b.colaboradores} barberos</span>
+                            </div>
+                            <button type="button" onClick={() => restaurarBackup(b.id)} disabled={backupsBusy}
+                              className="shrink-0 text-[10px] font-mono px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 disabled:opacity-60 cursor-pointer">
+                              Restaurar
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -2754,28 +2814,28 @@ export default function TenantAdmin({
           let weeklyTotal = 0;
           let monthlyTotal = 0;
           let yearlyTotal = 0;
-          
+
           completed.forEach(b => {
             const s = services.find(srv => srv.id === b.serviceId);
             const price = s ? s.price : 0;
             const [year, month, day] = b.date.split('-').map(Number);
             const bDate = new Date(year, month - 1, day);
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            
+
             if (b.date === '2026-07-08' || (year === now.getFullYear() && (month - 1) === now.getMonth() && day === now.getDate())) {
               dailyTotal += price;
             }
-            
+
             const diffTime = Math.abs(today.getTime() - bDate.getTime());
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             if (diffDays <= 7 || b.date === '2026-07-08') {
               weeklyTotal += price;
             }
-            
+
             if (b.date.startsWith('2026-07') || (year === now.getFullYear() && (month - 1) === now.getMonth())) {
               monthlyTotal += price;
             }
-            
+
             if (b.date.startsWith('2026') || year === now.getFullYear()) {
               yearlyTotal += price;
             }
