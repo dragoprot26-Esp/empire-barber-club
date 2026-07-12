@@ -8,6 +8,7 @@ import TenantAdmin from './components/TenantAdmin';
 import {
   validarLicencia, asegurarCuentaSeguraDueno, asegurarCuentaSeguraColab,
   cloudLoad, cloudSave, barbPublica, barbAgregarReserva, barbAgregarTestimonio,
+  barbHistListar, barbHistRestaurar,
   signOut,
 } from './cloud';
 import * as bio from './biometric';
@@ -237,12 +238,38 @@ export default function App() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Guardado sincrónico antes de salir: no se pierde ningún cambio reciente.
+    const codigo = getLicencia()?.codigo;
+    if (codigo && hydratedRef.current) {
+      try {
+        const data = {
+          shop: { ...tenant, services, collaborators, testimonials, gallery, timeSlots: generalTimeSlots },
+          bookings, payments, notifications,
+        };
+        await cloudSave(codigo, data);
+      } catch (e) { /* noop */ }
+    }
     signOut();
     hydratedRef.current = false;
     setIsAdminLoggedIn(false);
     setIsPreviewActive(false);
     addNotification('Sesión cerrada', 'Se cerró la sesión del panel por seguridad.');
+  };
+
+  // Copias de seguridad: listar y restaurar
+  const handleListBackups = async () => {
+    const codigo = getLicencia()?.codigo;
+    if (!codigo) return [];
+    return await barbHistListar(codigo);
+  };
+  const handleRestoreBackup = async (id: number) => {
+    const codigo = getLicencia()?.codigo;
+    if (!codigo) return false;
+    const data = await barbHistRestaurar(codigo, id);
+    if (!data) return false;
+    hydrate(data); // recarga la barbería con la copia restaurada
+    return true;
   };
 
   // ── Reserva de turno (público por RPC / admin local) ──
@@ -391,6 +418,8 @@ export default function App() {
             setGallery={setGallery}
             sessionRole={sessionRole}
             sessionUser={sessionUser}
+            onListBackups={handleListBackups}
+            onRestoreBackup={handleRestoreBackup}
           />
         ) : (
           <PublicPage

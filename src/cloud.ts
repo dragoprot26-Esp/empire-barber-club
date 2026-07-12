@@ -210,3 +210,13 @@ export async function barbAgregarTestimonio(codigo: string, testimonio: any): Pr
   try { const r = await rpc('barb_agregar_testimonio', { p_codigo: codigo, p_testimonio: testimonio }, false); return !!(r && r.ok); }
   catch (e) { return false; }
 }
+
+// ── Copias de seguridad / rollback ──────────────────────────────────────
+export async function barbHistListar(codigo: string): Promise<any[]> {
+  try { const r = await rpc('barb_hist_listar', { p_codigo: codigo }); return Array.isArray(r) ? r : []; }
+  catch (e) { return []; }
+}
+export async function barbHistRestaurar(codigo: string, id: number): Promise<any | null> {
+  try { const r = await rpc('barb_hist_restaurar', { p_codigo: codigo, p_id: id }); return (r && r.ok) ? r.data : null; }
+  catch (e) { return null; }
+}
