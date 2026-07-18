@@ -1,4 +1,5 @@
 import { useState, useEffect, FormEvent } from 'react';
+import { comprimirImagen } from '../img';
 import { 
   Users, Palette, CreditCard, ShieldCheck, Bell, LogOut, Eye, Plus, Trash2, Edit2, Check, X,
   Key, Fingerprint, Mail, RefreshCw, AlertCircle, Sparkles, UserPlus, Scissors, Calendar, Settings, MapPin, Phone, Store, Clock, Upload,
@@ -15,16 +16,10 @@ interface ImageUploaderProps {
 function ImageUploader({ label, currentImage, onUpload }: ImageUploaderProps) {
   const [dragActive, setDragActive] = useState(false);
 
-  const handleFile = (file: File) => {
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          onUpload(reader.result);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleFile = async (file: File) => {
+    if (!file || !file.type.startsWith('image/')) return;
+    const r = await comprimirImagen(file, 1000, 0.72);
+    if (r) onUpload(r); else alert('No se pudo procesar la imagen.');
   };
 
   return (
