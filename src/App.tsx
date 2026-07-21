@@ -60,6 +60,7 @@ export default function App() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isPreviewActive, setIsPreviewActive] = useState(false);
   const [cargandoPublico, setCargandoPublico] = useState(publicMode);
+  const [bloqueada, setBloqueada] = useState(false);
 
   // Seguridad (OTP estético)
   const [securitySettings, setSecuritySettings] = useState({ otpEnabled: true, biometricsEnabled: false });
@@ -105,6 +106,7 @@ export default function App() {
     if (!publicMode) return;
     (async () => {
       const r = await barbPublica(publicCode!);
+      if (r && (r as any).bloqueada) { setBloqueada(true); setCargandoPublico(false); return; }  // kill switch
       if (r && r.ok && r.shop) hydrate({ shop: r.shop });
       setCargandoPublico(false);
     })();
@@ -313,6 +315,22 @@ export default function App() {
 
   // ── Modo público: solo la vidriera ──
   if (publicMode) {
+    // Kill switch: si el dueño bloqueó la pública, el visitante ve "En Mantenimiento".
+    if (bloqueada) {
+      return (
+        <div className="min-h-screen flex items-center justify-center p-6 bg-neutral-950 text-neutral-100">
+          <div className="max-w-md w-full text-center bg-neutral-900 border border-white/10 rounded-3xl p-8 shadow-2xl">
+            <div className="text-5xl mb-4">🛠️</div>
+            <h1 className="text-2xl font-bold tracking-tight mb-2">En Mantenimiento</h1>
+            <p className="text-sm text-neutral-400 leading-relaxed">
+              Estamos trabajando para brindarte una mejor experiencia. La página vuelve muy pronto.
+              <br /><br />¡Gracias por tu paciencia! Saludos cordiales. 🙌
+            </p>
+            <div className="mt-6 h-1 w-16 bg-amber-500 rounded-full mx-auto"></div>
+          </div>
+        </div>
+      );
+    }
     if (cargandoPublico) {
       return <div className="min-h-screen bg-neutral-950 text-amber-500 flex items-center justify-center font-serif">Cargando barbería…</div>;
     }
